@@ -18,7 +18,7 @@ data = pd.read_csv(path)
 data = data.head(50000)
 
 # We only need the reviews column
-reviews = data['reviews'].values
+reviews = data['text'].values
 
 # Just printing the length of the array
 print('There are total {} reviews in the dataset'.format(len(reviews)))
