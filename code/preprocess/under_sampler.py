@@ -2,7 +2,7 @@ import pandas as pd
 from imblearn.under_sampling import RandomUnderSampler
 
 # Dataset paths
-paths = ['yelp_FastFoot_dataset.csv']
+paths = ['data/yelp_FastFoot_dataset.csv']
 
 # Initializing RandomUnderSampler
 rus = RandomUnderSampler(random_state=1969)
@@ -76,4 +76,4 @@ del newReviews, newRatings
 dataset = dataset.sample(frac=1)
 
 # Saving the data as a csv file
-dataset.to_csv('new_dataset.csv', index=False)
+dataset.to_csv('data/yelp_FastFoot_dataset.csv', index=False)

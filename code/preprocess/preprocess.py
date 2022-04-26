@@ -6,7 +6,7 @@ from torch import max
 from torch.nn import LSTM, Linear, Dropout, MaxPool1D, GRU, Conv1d, Emedding, Sequential
 
 ####
-data = pd.read_csv('dataset/yelp_FastFood_dataset.csv')
+data = pd.read_csv('data/yelp_FastFood_dataset.csv')
 #DIRECTLY COPIED AND PASTED EXCEPT FOR FILEPATH
 ####
 
@@ -39,6 +39,6 @@ X_vec_pad = pad_sequences(X_vec, MAX_WORDS, padding='post')
 dataset = np.hstack((X_vec_pad, y.reshape(-1,1)))
 
 # Saving the dataset as numpy file
-np.save('data/yelp_FastFood_dataset', dataset)
+np.save('data/ypreprocessed_dataset', data)
 #DIRECTLY COPIED
 ####

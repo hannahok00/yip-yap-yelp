@@ -76,7 +76,7 @@ model.fit(X_train,
 
 
 # Saving the model
-model.save('model/model_best.h5') 
+model.save('data/model_best.h5') 
 # bridget: I switched this from him, it was dataset/model_best.h5 but I am confused because ..
 # when he saves it he does it under model file
 

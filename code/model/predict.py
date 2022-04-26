@@ -7,12 +7,12 @@ from keras.preprocessing.sequence import pad_sequences
 MAX_WORDS = 80
 
 # Main Model
-model = keras.models.load_model('model/model.h5')
+model = keras.models.load_model('data/model.h5')
 
 # Compiling the model
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-with open(r"yelp_FastFoot_dataset", "rb") as input_file:
+with open(r"word_tokenizer.pickle", "rb") as input_file:
     tokenizer = pickle.load(input_file)
     
 
