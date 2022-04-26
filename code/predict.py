@@ -12,7 +12,7 @@ model = keras.models.load_model('dataset/model.h5')
 # Compiling the model
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-with open(r"dataset/word_tokenizer.pickle", "rb") as input_file:
+with open(r"yelp_FastFoot_dataset", "rb") as input_file:
     tokenizer = pickle.load(input_file)
     
 
