@@ -1,9 +1,12 @@
 import pickle
+from xml.etree.ElementPath import prepare_parent
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split, sk_text
+import torch
 from torch import max
-from torch.nn import LSTM, Linear, Dropout, MaxPool1D, GRU, Conv1d, Emedding, Sequential
+from torch import optim
+from torch.nn import LSTM, Linear, Dropout, MaxPool1d, GRU, Conv1d, Embedding, Sequential, ReLU, Softmax, Sigmoid
+from real_preprocess import preprocess
 
 #not sure of the equivalent to earlystopping or modelcheckpoint
 
@@ -13,70 +16,89 @@ from torch.nn import LSTM, Linear, Dropout, MaxPool1D, GRU, Conv1d, Emedding, Se
 
 
 
-#here would need to read from the tokenized pickle file
-with open("file name goes here", "rb") as input_file: 
-    tokenzier = pickle.load(input_file)
-
-
 #constants
 GPU = False
-MAX_WORDS = 80
-NUMBER_OF_CLASSES = 5
+MAX_WORDS = 20
+#Depends on binary classification or not
+NUMBER_OF_CLASSES = 2
+#Idk what vocab size is 
 VOCAB_SIZE = 10000
 EPOCHS = 50
 BATCH_SIZE = 1024
 
-dataset = np.load('data set goes here')
+class Model(torch.nn.Module):
+    def __init__(self):
+        super(Model, self).__init__()
 
-X = dataset[:,80]
-y = dataset[:,80] #i think represents stars
-#yelp github uses 
-#Tfidf_vectorizer.get_feature_names()) and then uses ['stars']
-y = pd.get_dummies(y).values
+    
+        #self.model = Sequential()
+        #Need to figure out vocab size
+        self.embedding = Embedding(VOCAB_SIZE, 128)
+        self.LSTM = LSTM(128, 300)
+        self.l1 = Linear(300, 100)
+        self.relu = ReLU()
+        self.l2 = Linear(128, 2)
+        self.softmax = Softmax()
+    
+        self.sigm = Sigmoid()
+        #self.optimizer = optim.Adam(self.model.parameters(), lr=0.005)
 
-del dataset
+        self.loss_list = []
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.1, random_state = 1969)
+    def call(self, reviews):
+        
+        #Need to figure out vocab size
+        #The shape of the self.embedding will be [sentence_length, batch_size, embedding_dim]
+        l1_out = self.embedding(reviews)
+        l2_out, hidden_state = self.LSTM(l1_out)
+        #print(l2_out.shape)
+        l3_out = self.l1(l2_out)
+        l4_out = self.relu(l3_out)
+        l5_out = self.l2(l4_out) 
+        final_out = self.softmax(l5_out)
+        return final_out
 
+    def loss(self, labels, predictions):
+        #Might need to reshape datat
 
-del X, y 
+        loss = torch.nn.CrossEntropyLoss()
+        output = loss(predictions, labels)
+        self.loss_list.append(output)
+        return loss
 
-model = Sequential()
-model.add(Emedding(VOCAB_SIZE, 128, input_length=MAX_WORDS))
-model.add(Dropout(0.5))
-model.add(Conv1d(filters=256, kernel_size=3, input_length=MAX_WORDS))
-model.add(MaxPool1D(3))
-model.add(Conv1d(filters=512, kernel_size=3, activation='relu'))
-model.add(MaxPool1D(3))
-model.add(Dropout(0.5))
-#did not add the if gru statement
-model.add(LSTM(256, return_sequences=True))
-#did not add global max pool -- pytorch has no such function 
-model.add(Linear(256, activation='relu'))
-model.add(Linear(128, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Linear(NUMBER_OF_CLASSES, activation='softmax'))
-
-
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-print(model.summary())
-
-#did not know how to implement early stopping and model checkpoint in pytorch/our code
-
-##i feel as if we should do something other than the model.fit to train the data
-#kind of confused by it
-
-
-model.fit(X_train, 
-          y_train, 
-          validation_data=(X_test, y_test), 
-          epochs=EPOCHS, 
-          batch_size=BATCH_SIZE)
+    def accuracy(self, labels, predictions):
+        correct_count = 0
+        count = 0
+        for i in range(len(predictions)):
+            if np.argmax(i) == labels[i]:
+                correct_count += 1
+                count += 1
+            else:
+                count += 1
+        
+        return correct_count/count
 
 
-# Saving the model
-model.save('data/model_best.h5') 
-# bridget: I switched this from him, it was dataset/model_best.h5 but I am confused because ..
-# when he saves it he does it under model file
+    def train(self, inputs, labels):
+        print("training")
+        inputs = torch.tensor(inputs)
+        print(inputs.shape)
+        probabilites = self.call(inputs)
+        print(probabilites.shape)
 
+        loss = self.loss(labels, probabilites)
+        loss.backward()
+
+
+        
+    def test(self):
+        pass
+
+def main():
+    print("running")
+    model = Model()
+    train_inputs, test_inputs, train_labels, test_labels = preprocess()
+    model.train(train_inputs, train_labels)
+
+if __name__ == "__main__":
+    main()
