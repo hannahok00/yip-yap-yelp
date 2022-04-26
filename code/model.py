@@ -75,5 +75,6 @@ model.fit(X_train,
           batch_size=BATCH_SIZE)
 
 
-
+# Saving the model
+model.save('model/model_best.h5')
 

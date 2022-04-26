@@ -5,9 +5,6 @@ from sklearn.model_selection import train_test_split
 from torch import max
 from torch.nn import LSTM, Linear, Dropout, MaxPool1D, GRU, Conv1d, Emedding, Sequential
 
-with open("file path goes here", "rb") as input_file:
-    tokenizer = pickle.load(input_file)
-
 ####
 data = pd.read_csv('dataset/yelp_FastFood_dataset.csv')
 #DIRECTLY COPIED AND PASTED EXCEPT FOR FILEPATH

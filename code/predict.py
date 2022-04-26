@@ -7,7 +7,7 @@ from keras.preprocessing.sequence import pad_sequences
 MAX_WORDS = 80
 
 # Main Model
-model = keras.models.load_model('dataset/model.h5')
+model = keras.models.load_model('model/model.h5')
 
 # Compiling the model
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
