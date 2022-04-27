@@ -102,8 +102,8 @@ class Model(torch.nn.Module):
         count = 0
         #Run through each input in batch
         for i in range(len(predictions)):
-            print(predictions[i])
-            print(torch.argmax(predictions[i]))
+           # print(predictions[i])
+           # print(torch.argmax(predictions[i]))
             #Returns the indices of the maximum value thus if correctly predicted increments counter
             if torch.argmax(predictions[i]) == labels[i]:
                 correct_count += 1
