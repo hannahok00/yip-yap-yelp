@@ -10,6 +10,7 @@ from torch import optim
 from torch.nn import LSTM, Linear, Dropout, MaxPool1d, GRU, Conv1d, Embedding, Sequential, ReLU, Softmax, Sigmoid
 from real_preprocess import preprocess
 from torch.utils.data import DataLoader
+from matplotlib import pyplot as plt
 
 #not sure of the equivalent to earlystopping or modelcheckpoint
 
@@ -21,7 +22,7 @@ from torch.utils.data import DataLoader
 
 #constants
 GPU = False
-MAX_WORDS = 20
+MAX_WORDS = 50
 #Depends on binary classification or not
 NUMBER_OF_CLASSES = 2
 #Idk what vocab size is 
@@ -40,7 +41,7 @@ class Model(torch.nn.Module):
         self.embedding = Embedding(VOCAB_SIZE, 128)
         
         #Define layers
-        self.LSTM = LSTM(2560, 300)
+        self.LSTM = LSTM(MAX_WORDS*128, 300)
         self.l1 = Linear(300, 100)
         self.relu = ReLU()
         self.l2 = Linear(100, 2)
@@ -61,7 +62,7 @@ class Model(torch.nn.Module):
 
         #Reshape output to be (100, 2560) which is dimension (sentence_length * embedding_dim)
         #?? This component is questionable
-        l1_out = torch.reshape(l1_out, (self.batch_size, 20*128))
+        l1_out = torch.reshape(l1_out, (self.batch_size, MAX_WORDS*128))
         print("l1 output shape:", l1_out.shape)
 
         #Pass inputs through LSTM
@@ -137,7 +138,7 @@ class Model(torch.nn.Module):
             #Calculate the loss
             loss = self.loss(labels_batch, probabilites)
             print("Loss from batch: ", i, "i", loss)
-
+            self.loss_list.append(loss.item())
             #Update model parameters
             optimizer.zero_grad()
             loss.backward()
@@ -173,6 +174,27 @@ class Model(torch.nn.Module):
         #Return the average accuracy across all batches
         return np.average(accuracy_list)
 
+
+
+
+def visualize_loss(losses): 
+    """
+    Uses Matplotlib to visualize the losses of our model.
+    :param losses: list of loss data stored from train. Can use the model's loss_list 
+    field 
+
+    NOTE: DO NOT EDIT
+
+    :return: doesn't return anything, a plot should pop-up 
+    """
+    #losses = losses.numpy()
+    x = [i for i in range(len(losses))]
+    plt.plot(x, losses)
+    plt.title('Loss per batch')
+    plt.xlabel('Batch')
+    plt.ylabel('Loss')
+    plt.show()  
+
 def main():
     
     print("called main")
@@ -189,6 +211,7 @@ def main():
     #Get the accuracy from testing
     accuracy = model.test(test_inputs, test_labels)
 
+    visualize_loss(model.loss_list)
     print("accuracy", accuracy)
      
 if __name__ == "__main__":
