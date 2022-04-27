@@ -1,4 +1,5 @@
 import pickle
+from pickletools import optimize
 from xml.etree.ElementPath import prepare_parent
 import numpy as np
 import pandas as pd
@@ -64,7 +65,7 @@ class Model(torch.nn.Module):
         loss = torch.nn.CrossEntropyLoss()
         output = loss(predictions, labels)
         self.loss_list.append(output)
-        return loss
+        return output
 
     def accuracy(self, labels, predictions):
         correct_count = 0
@@ -80,6 +81,8 @@ class Model(torch.nn.Module):
 
 
     def train(self, inputs, labels):
+        optimizer = optim.Adam(self.parameters(), lr=0.005)
+        optimizer.zero_grad()
         print("training")
         inputs = torch.tensor(inputs)
         print(inputs.shape)
@@ -88,6 +91,9 @@ class Model(torch.nn.Module):
 
         loss = self.loss(labels, probabilites)
         loss.backward()
+        optimizer.step()
+
+        return 
 
 
         
