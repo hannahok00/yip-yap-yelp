@@ -33,7 +33,7 @@ def get_labels_data():
     data = pd.read_csv('../data/yelp_FastFood_dataset1.csv')
 
     #get the labels - corresponds to number of stars 
-    labels = data['review_stars']
+    labels = data['review_stars'].values
     reviews = data['text']
     #print(reviews[0:10])
     
@@ -45,14 +45,14 @@ def get_labels_data():
 #Function only for use if classifying as positive or negative
 def classify_label(labels, cutoff):
 
-    labels = []
+    labels_list= []
     for label in labels:
         if label >= cutoff:
-            labels.append(0)
+            labels_list.append(0)
         else:
-            labels.append(1)
-
-    return labels
+            labels_list.append(1)
+    #print(labels)
+    return np.array(labels_list)
 
 def tokenize(reviews):
     #Get the stop words 
@@ -126,6 +126,7 @@ def fit_text(reviews):
 def preprocess():
 
     labels, reviews = get_labels_data()
+    
     classified_labels = classify_label(labels, 3)
     reviews = tokenize(reviews)
     tokenized_words = fit_text(reviews)
@@ -133,7 +134,7 @@ def preprocess():
 
     train_inputs = padded_tokens[:800]
     test_inputs = padded_tokens[800:]
-    train_labels = classified_labels[800:]
+    train_labels = classified_labels[:800]
     test_labels = classified_labels[800:]
 
     return train_inputs, test_inputs, train_labels, test_labels
