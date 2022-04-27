@@ -97,13 +97,15 @@ class Model(torch.nn.Module):
 
 
     def accuracy(self, labels, predictions):
-
+        
         correct_count = 0
         count = 0
         #Run through each input in batch
         for i in range(len(predictions)):
+            print(predictions[i])
+            print(torch.argmax(predictions[i]))
             #Returns the indices of the maximum value thus if correctly predicted increments counter
-            if np.argmax(i) == labels[i]:
+            if torch.argmax(predictions[i]) == labels[i]:
                 correct_count += 1
                 count += 1
             #Increments total counter if incorrectly predicted
