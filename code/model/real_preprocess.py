@@ -38,7 +38,7 @@ def get_labels_data():
     #Get's rid of all punctuation
     reviews = data['text'].apply(lambda x: re.sub('[%s]' % re.escape(string.punctuation), '' , x))
 
-    return labels[0:1000], reviews[0:1000]
+    return labels[0:80000], reviews[0:80000]
     
 #Function only for use if classifying as positive or negative
 def classify_label(labels, cutoff):
@@ -96,7 +96,7 @@ def string_to_integer(reviews):
 
 def pad_tokens(tokens):
     #tokens = [torch.tensor(w) for w in tokens]
-    padded_tokens = pad_sequences(tokens, maxlen=20) 
+    padded_tokens = pad_sequences(tokens, maxlen=50) 
 
     #print(padded_tokens)
     return padded_tokens
@@ -130,10 +130,10 @@ def preprocess():
     tokenized_words = fit_text(reviews)
     padded_tokens = pad_tokens(tokenized_words)
 
-    train_inputs = padded_tokens[:800]
-    test_inputs = padded_tokens[800:]
-    train_labels = classified_labels[:800]
-    test_labels = classified_labels[800:]
+    train_inputs = padded_tokens[:64000]
+    test_inputs = padded_tokens[64000:]
+    train_labels = classified_labels[:64000]
+    test_labels = classified_labels[64000:]
 
     return train_inputs, test_inputs, train_labels, test_labels
 
