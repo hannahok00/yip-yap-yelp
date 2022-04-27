@@ -19,8 +19,6 @@ nltk.download('punkt')
 nltk.download('wordnet')
 nltk.download('omw-1.4')
 
-print("hello")
-
 
 #In order to preprocess data we have a number of things we want to do:
 # 1. remove punctuation
