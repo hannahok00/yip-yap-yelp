@@ -25,7 +25,7 @@ MAX_WORDS = 20
 #Depends on binary classification or not
 NUMBER_OF_CLASSES = 2
 #Idk what vocab size is 
-VOCAB_SIZE = 10000
+VOCAB_SIZE = 500000
 EPOCHS = 50
 BATCH_SIZE = 1024
 
@@ -33,89 +33,110 @@ class Model(torch.nn.Module):
     def __init__(self):
         super(Model, self).__init__()
 
+        #Define batch size
         self.batch_size = 100
-        #self.model = Sequential()
-        #Need to figure out vocab size
+        
+        #Need to figure out vocab size, define embedding matrix
         self.embedding = Embedding(VOCAB_SIZE, 128)
-        #self.l_test=Linear(128,1)
-        #self.sigm= Sigmoid()
+        
+        #Define layers
         self.LSTM = LSTM(2560, 300)
         self.l1 = Linear(300, 100)
         self.relu = ReLU()
         self.l2 = Linear(100, 2)
-        self.softmax = Softmax()
-    
-        #self.sigm = Sigmoid()
-        self.optimizer = optim.Adam(self.parameters(), lr=0.005)
 
-        self.loss = torch.nn.CrossEntropyLoss()
+        #Do we want softmax or sigmoid
+        self.softmax = Softmax()
+        self.sigm= Sigmoid()
+    
 
         self.loss_list = []
 
     def call(self, reviews):
         
-        #Need to figure out vocab size
-        #The shape of the self.embedding will be [sentence_length, batch_size, embedding_dim]
+        
+        #The shape of the self.embedding output will be [sentence_length, batch_size, embedding_dim]
         l1_out = self.embedding(reviews)
         print("l1 output shape:", l1_out.shape)
+
+        #Reshape output to be (100, 2560) which is dimension (sentence_length * embedding_dim)
+        #?? This component is questionable
         l1_out = torch.reshape(l1_out, (self.batch_size, 20*128))
         print("l1 output shape:", l1_out.shape)
+
+        #Pass inputs through LSTM
         l2_out, hidden_state = self.LSTM(l1_out)
         print("l2 output shape:", l2_out.shape)
+
+        #Pass through dense layers
         l3_out = self.l1(l2_out)
         print("l3 output shape:", l3_out.shape)
         l4_out = self.relu(l3_out)
         print("l4 output shape:", l4_out.shape)
         l5_out = self.l2(l4_out) 
         print("l5 output shape:", l5_out.shape)
-        final_out = self.softmax(l5_out)
+
+        #Use sigmoid to get probabilities
+        final_out = self.sigm(l5_out)
         print("final output shape:", final_out.shape)
-        #print(final_out)
+        
         return final_out
 
     def loss(self, labels, predictions):
-        #Might need to reshape datat
+
+        #Convert labels to tensor
         labels = torch.tensor(labels)
-        print("labels shape", labels.shape)
-        print("predictions shape", predictions.shape)
+        
+        #Define loss 
         loss = torch.nn.CrossEntropyLoss(size_average=False)
+
+        #Calculate the loss
         output = loss(predictions, labels)
-        self.loss_list.append(output)
+        
         return output
 
+
     def accuracy(self, labels, predictions):
+
         correct_count = 0
         count = 0
+        #Run through each input in batch
         for i in range(len(predictions)):
+            #Returns the indices of the maximum value thus if correctly predicted increments counter
             if np.argmax(i) == labels[i]:
                 correct_count += 1
                 count += 1
+            #Increments total counter if incorrectly predicted
             else:
                 count += 1
         
+        #Return the correct predictions over total to give accuracy
         return correct_count/count
 
 
     def train(self, inputs, labels):
-
+        #Define optimizer to use in backpropogation
         optimizer = optim.Adam(self.parameters(), lr=0.005)
 
+        
         for i in range(int(len(inputs)/self.batch_size)):
-            print(i)
+            print("Training batch: ", i)
+
+            #Get the next batch of inputs and labels
             input_batch = inputs[i*self.batch_size: i*self.batch_size + self.batch_size]
             labels_batch = labels[i*self.batch_size: i*self.batch_size + self.batch_size]
-            print(input_batch.shape)
-            print(labels_batch.shape)
-            print("training")
-
+            
+            #Convert inputs to batch
             input_batch = torch.tensor(input_batch)
            
+            #Run forward pass
             probabilites = self.call(input_batch)
 
-            print(probabilites.shape)
-
+            #Calculate the loss
             loss = self.loss(labels_batch, probabilites)
+            print("Loss from batch: ", i, "i", loss)
 
+            #Update model parameters
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -123,19 +144,50 @@ class Model(torch.nn.Module):
         return 
 
 
+    
+    def test(self, inputs, labels):
+        accuracy_list = []
+
+        for i in range(int(len(inputs)/self.batch_size)):
+            print("Testing batch: ", i)
+
+            #Get next batch of inputs and labels
+            input_batch = inputs[i*self.batch_size: i*self.batch_size + self.batch_size]
+            labels_batch = labels[i*self.batch_size: i*self.batch_size + self.batch_size]
+
+            #Convert inputs to tensor to run through model
+            input_batch = torch.tensor(input_batch)
+
+            #Get the probability distribution for the batch
+            probabilites = self.call(input_batch)
+
+            #Calculate the accuracy
+            accuracy = self.accuracy(labels_batch, probabilites)
+            print("batch accuracy: ", accuracy)
+            
+            #Append accuracy to list
+            accuracy_list.append(accuracy)
         
-    def test(self):
-        pass
+        #Return the average accuracy across all batches
+        return np.average(accuracy_list)
 
 def main():
-    print("running")
+    
+    print("called main")
+
+    #Instantiate the model
     model = Model()
+
+    #Get the train and test inputs and labels from preprocess
     train_inputs, test_inputs, train_labels, test_labels = preprocess()
-    
-    #train__inputs_loader = DataLoader(train_inputs, batch_size=100, shuffle=False)
-    #train_labels_loader = DataLoader(train_labels, batch_size=100, shuffle=False)
-    
+
+    #Train the model
     model.train(train_inputs, train_labels)
 
+    #Get the accuracy from testing
+    accuracy = model.test(test_inputs, test_labels)
+
+    print("accuracy", accuracy)
+     
 if __name__ == "__main__":
     main()
