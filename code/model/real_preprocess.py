@@ -38,7 +38,7 @@ def get_labels_data():
     #Get's rid of all punctuation
     reviews = data['text'].apply(lambda x: re.sub('[%s]' % re.escape(string.punctuation), '' , x))
 
-    return labels[0:50000], reviews[0:50000]
+    return labels[0:80000], reviews[0:80000]
     
 #Function only for use if classifying as positive or negative
 def binary_label(labels, cutoff):
@@ -62,6 +62,22 @@ def ternary_label(labels):
             labels_list.append(1)
         if label < 3:
             labels_list.append(2)
+    #print(labels)
+    return np.array(labels_list)
+
+def five_classes(labels):
+    labels_list= []
+    for label in labels:
+        if label == 5:
+            labels_list.append(0)
+        if label == 4:
+            labels_list.append(1)
+        if label == 3:
+            labels_list.append(2)
+        if label == 2:
+            labels_list.append(3)
+        if label == 1:
+            labels_list.append(4)
     #print(labels)
     return np.array(labels_list)
 
@@ -134,24 +150,36 @@ def fit_text(reviews):
     #print(tokenized_words)
     return tokenized_words
 
-def preprocess(multi_class=False):
+def preprocess(classification=2):
 
     labels, reviews = get_labels_data()
-    labels = ternary_label(labels)
+
+    #Call if binary classification
+    if classification == 2:
+        labels = binary_label(labels)
+
+    #Call if ternary classification
+    if classification == 3:
+        labels = ternary_label(labels)
+
+    #Call if full multi-class classification
+    if classification == 5:
+        labels = five_classes(labels)
+
     #if multi_class == False:
     #    classified_labels = classify_label(labels, 3)
     reviews = tokenize(reviews)
     tokenized_words = fit_text(reviews)
     padded_tokens = pad_tokens(tokenized_words)
 
-    train_inputs = padded_tokens[:40000]
-    test_inputs = padded_tokens[40000:]
+    train_inputs = padded_tokens[:64000]
+    test_inputs = padded_tokens[64000:]
     #if multi_class == False:
     #    train_labels = classified_labels[:64000]
     #    test_labels = classified_labels[64000:]
    # else:
-    train_labels = labels[:40000]
-    test_labels = labels[40000:]
+    train_labels = labels[:64000]
+    test_labels = labels[64000:]
 
     return train_inputs, test_inputs, train_labels, test_labels
 
