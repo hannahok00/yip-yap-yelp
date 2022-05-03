@@ -1,3 +1,4 @@
+from cProfile import label
 import pickle
 from pickletools import optimize
 from random import shuffle
@@ -24,7 +25,7 @@ from matplotlib import pyplot as plt
 GPU = False
 MAX_WORDS = 50
 #Depends on binary classification or not
-NUMBER_OF_CLASSES = 2
+NUMBER_OF_CLASSES = 3
 #Idk what vocab size is 
 VOCAB_SIZE = 500000
 EPOCHS = 50
@@ -44,7 +45,7 @@ class Model(torch.nn.Module):
         self.LSTM = LSTM(MAX_WORDS*128, 300)
         self.l1 = Linear(300, 100)
         self.relu = ReLU()
-        self.l2 = Linear(100, 2)
+        self.l2 = Linear(100, NUMBER_OF_CLASSES)
 
         #Do we want softmax or sigmoid
         self.softmax = Softmax()
@@ -77,8 +78,8 @@ class Model(torch.nn.Module):
         l5_out = self.l2(l4_out) 
         print("l5 output shape:", l5_out.shape)
 
-        #Use sigmoid to get probabilities
-        final_out = self.sigm(l5_out)
+        #Use sigmoid to get probabilities if binary, softmax if ternary 
+        final_out = self.softmax(l5_out)
         print("final output shape:", final_out.shape)
         
         return final_out
@@ -103,7 +104,8 @@ class Model(torch.nn.Module):
         count = 0
         #Run through each input in batch
         for i in range(len(predictions)):
-           # print(predictions[i])
+            print(predictions[i])
+            print(labels[i])
            # print(torch.argmax(predictions[i]))
             #Returns the indices of the maximum value thus if correctly predicted increments counter
             if torch.argmax(predictions[i]) == labels[i]:
@@ -128,7 +130,7 @@ class Model(torch.nn.Module):
             #Get the next batch of inputs and labels
             input_batch = inputs[i*self.batch_size: i*self.batch_size + self.batch_size]
             labels_batch = labels[i*self.batch_size: i*self.batch_size + self.batch_size]
-            
+            #labels_batch = [label - 1 for label in labels_batch]
             #Convert inputs to batch
             input_batch = torch.tensor(input_batch)
            
@@ -203,7 +205,7 @@ def main():
     model = Model()
 
     #Get the train and test inputs and labels from preprocess
-    train_inputs, test_inputs, train_labels, test_labels = preprocess()
+    train_inputs, test_inputs, train_labels, test_labels = preprocess(multi_class=False)
 
     #Train the model
     model.train(train_inputs, train_labels)
