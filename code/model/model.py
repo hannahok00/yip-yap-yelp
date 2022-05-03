@@ -32,7 +32,7 @@ EPOCHS = 50
 BATCH_SIZE = 1024
 
 class Model(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, classification):
         super(Model, self).__init__()
 
         #Define batch size
@@ -45,7 +45,8 @@ class Model(torch.nn.Module):
         self.LSTM = LSTM(MAX_WORDS*128, 300)
         self.l1 = Linear(300, 100)
         self.relu = ReLU()
-        self.l2 = Linear(100, NUMBER_OF_CLASSES)
+        #Pass in the number of output classes
+        self.l2 = Linear(100, classification)
 
         #Do we want softmax or sigmoid
         self.softmax = Softmax()
@@ -59,28 +60,28 @@ class Model(torch.nn.Module):
         
         #The shape of the self.embedding output will be [sentence_length, batch_size, embedding_dim]
         l1_out = self.embedding(reviews)
-        print("l1 output shape:", l1_out.shape)
+        #print("l1 output shape:", l1_out.shape)
 
         #Reshape output to be (100, 2560) which is dimension (sentence_length * embedding_dim)
         #?? This component is questionable
         l1_out = torch.reshape(l1_out, (self.batch_size, MAX_WORDS*128))
-        print("l1 output shape:", l1_out.shape)
+        #print("l1 output shape:", l1_out.shape)
 
         #Pass inputs through LSTM
         l2_out, hidden_state = self.LSTM(l1_out)
-        print("l2 output shape:", l2_out.shape)
+        #print("l2 output shape:", l2_out.shape)
 
         #Pass through dense layers
         l3_out = self.l1(l2_out)
-        print("l3 output shape:", l3_out.shape)
+        #print("l3 output shape:", l3_out.shape)
         l4_out = self.relu(l3_out)
-        print("l4 output shape:", l4_out.shape)
+        #print("l4 output shape:", l4_out.shape)
         l5_out = self.l2(l4_out) 
-        print("l5 output shape:", l5_out.shape)
+        #print("l5 output shape:", l5_out.shape)
 
         #Use sigmoid to get probabilities if binary, softmax if ternary 
         final_out = self.softmax(l5_out)
-        print("final output shape:", final_out.shape)
+        #print("final output shape:", final_out.shape)
         
         return final_out
 
@@ -202,10 +203,12 @@ def main():
     print("called main")
 
     #Instantiate the model
-    model = Model()
+    #Change classification to be number of classes you want model to differentiate between
+    model = Model(classification=5)
 
     #Get the train and test inputs and labels from preprocess
-    train_inputs, test_inputs, train_labels, test_labels = preprocess(multi_class=False)
+    #Preprocesses labels depending on what type of classification: binary/multi-class
+    train_inputs, test_inputs, train_labels, test_labels = preprocess(classification=5)
 
     #Train the model
     model.train(train_inputs, train_labels)
