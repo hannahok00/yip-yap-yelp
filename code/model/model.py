@@ -104,11 +104,7 @@ class Model(torch.nn.Module):
             #Returns the indices of the maximum value thus if correctly predicted increments counter
             if torch.argmax(predictions[i]).item() == labels[i]:
                 correct_count += 1
-                count += 1
-
-            #Increments total counter if incorrectly predicted
-            else:
-                count += 1
+            count += 1
         
         #Return the correct predictions over total to give accuracy for that batch
         return correct_count/count
