@@ -19,8 +19,6 @@ from matplotlib import pyplot as plt
 #GRU layer would represent the bidirectional layer you can set GRU bidirectional = true 
 #for global max pooling can do output, _ = torch.max(input, 1)
 
-
-
 #constants
 GPU = False
 MAX_WORDS = 50
@@ -37,17 +35,19 @@ class Model(torch.nn.Module):
 
         #Define batch size
         self.batch_size = 100
+        self.linear_size_one = 300 
+        self.linear_size_two = 100 
         
         #Define embedding matrix
         self.embedding = Embedding(VOCAB_SIZE, 128)
         
         #Define layers
-        self.LSTM = LSTM(MAX_WORDS*128, 300)
-        self.l1 = Linear(300, 100)
+        self.LSTM = LSTM(MAX_WORDS*128, self.linear_size_one)
+        self.l1 = Linear(self.linear_size_one, self.linear_size_two)
         self.relu = ReLU()
 
         #Pass in the number of output classes
-        self.l2 = Linear(100, classification)
+        self.l2 = Linear(self.linear_size_two, classification)
 
         #Sigmoid for binary, softmax for multi-class
         self.softmax = Softmax()
@@ -57,8 +57,6 @@ class Model(torch.nn.Module):
         self.loss_list = []
 
     def call(self, reviews):
-        
-        
         #The shape of the self.embedding output will be [sentence_length, batch_size, embedding_dim]
         l1_out = self.embedding(reviews)
         l1_out = torch.reshape(l1_out, (self.batch_size, MAX_WORDS*128))
