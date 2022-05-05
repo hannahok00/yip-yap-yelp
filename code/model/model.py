@@ -1,8 +1,3 @@
-from cProfile import label
-import pickle
-from pickletools import optimize
-from random import shuffle
-from xml.etree.ElementPath import prepare_parent
 import numpy as np
 import pandas as pd
 import torch
@@ -13,11 +8,6 @@ from real_preprocess import preprocess
 from torch.utils.data import DataLoader
 from matplotlib import pyplot as plt
 
-#not sure of the equivalent to earlystopping or modelcheckpoint
-
-#linear is equivalent to dense layers
-#GRU layer would represent the bidirectional layer you can set GRU bidirectional = true 
-#for global max pooling can do output, _ = torch.max(input, 1)
 
 #constants
 GPU = False
