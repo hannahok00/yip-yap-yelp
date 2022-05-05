@@ -24,12 +24,12 @@ from matplotlib import pyplot as plt
 #constants
 GPU = False
 MAX_WORDS = 50
-#Depends on binary classification or not
+#Depends on which classification (2, 3 or 5)
 NUMBER_OF_CLASSES = 3
-#Idk what vocab size is 
+#Set large vocab size for embedding matrix
 VOCAB_SIZE = 500000
 EPOCHS = 50
-BATCH_SIZE = 1024
+BATCH_SIZE = 100
 
 class Model(torch.nn.Module):
     def __init__(self, classification):
@@ -38,21 +38,22 @@ class Model(torch.nn.Module):
         #Define batch size
         self.batch_size = 100
         
-        #Need to figure out vocab size, define embedding matrix
+        #Define embedding matrix
         self.embedding = Embedding(VOCAB_SIZE, 128)
         
         #Define layers
         self.LSTM = LSTM(MAX_WORDS*128, 300)
         self.l1 = Linear(300, 100)
         self.relu = ReLU()
+
         #Pass in the number of output classes
         self.l2 = Linear(100, classification)
 
-        #Do we want softmax or sigmoid
+        #Sigmoid for binary, softmax for multi-class
         self.softmax = Softmax()
         self.sigm= Sigmoid()
     
-
+        #Loss list for plotting the losses
         self.loss_list = []
 
     def call(self, reviews):
@@ -60,28 +61,21 @@ class Model(torch.nn.Module):
         
         #The shape of the self.embedding output will be [sentence_length, batch_size, embedding_dim]
         l1_out = self.embedding(reviews)
-        #print("l1 output shape:", l1_out.shape)
-
-        #Reshape output to be (100, 2560) which is dimension (sentence_length * embedding_dim)
-        #?? This component is questionable
         l1_out = torch.reshape(l1_out, (self.batch_size, MAX_WORDS*128))
-        #print("l1 output shape:", l1_out.shape)
 
         #Pass inputs through LSTM
         l2_out, hidden_state = self.LSTM(l1_out)
-        #print("l2 output shape:", l2_out.shape)
-
+        
         #Pass through dense layers
         l3_out = self.l1(l2_out)
-        #print("l3 output shape:", l3_out.shape)
+       
         l4_out = self.relu(l3_out)
-        #print("l4 output shape:", l4_out.shape)
+       
         l5_out = self.l2(l4_out) 
-        #print("l5 output shape:", l5_out.shape)
 
-        #Use sigmoid to get probabilities if binary, softmax if ternary 
+        #Use softmax to get probability distribution 
         final_out = self.softmax(l5_out)
-        #print("final output shape:", final_out.shape)
+
         
         return final_out
 
@@ -105,18 +99,20 @@ class Model(torch.nn.Module):
         count = 0
         #Run through each input in batch
         for i in range(len(predictions)):
+            #Helps to indicate which predictions are correct/shows what the model learned for that input
             print(predictions[i])
             print(labels[i])
-           # print(torch.argmax(predictions[i]))
+            print(torch.argmax(predictions[i]).item())
             #Returns the indices of the maximum value thus if correctly predicted increments counter
-            if torch.argmax(predictions[i]) == labels[i]:
+            if torch.argmax(predictions[i]).item() == labels[i]:
                 correct_count += 1
                 count += 1
+
             #Increments total counter if incorrectly predicted
             else:
                 count += 1
         
-        #Return the correct predictions over total to give accuracy
+        #Return the correct predictions over total to give accuracy for that batch
         return correct_count/count
 
 
@@ -131,8 +127,8 @@ class Model(torch.nn.Module):
             #Get the next batch of inputs and labels
             input_batch = inputs[i*self.batch_size: i*self.batch_size + self.batch_size]
             labels_batch = labels[i*self.batch_size: i*self.batch_size + self.batch_size]
-            #labels_batch = [label - 1 for label in labels_batch]
-            #Convert inputs to batch
+   
+            #Convert inputs to tensor
             input_batch = torch.tensor(input_batch)
            
             #Run forward pass
@@ -142,6 +138,7 @@ class Model(torch.nn.Module):
             loss = self.loss(labels_batch, probabilites)
             print("Loss from batch: ", i, "i", loss)
             self.loss_list.append(loss.item())
+            
             #Update model parameters
             optimizer.zero_grad()
             loss.backward()
@@ -183,12 +180,7 @@ class Model(torch.nn.Module):
 def visualize_loss(losses): 
     """
     Uses Matplotlib to visualize the losses of our model.
-    :param losses: list of loss data stored from train. Can use the model's loss_list 
-    field 
-
-    NOTE: DO NOT EDIT
-
-    :return: doesn't return anything, a plot should pop-up 
+    
     """
     #losses = losses.numpy()
     x = [i for i in range(len(losses))]
@@ -204,11 +196,11 @@ def main():
 
     #Instantiate the model
     #Change classification to be number of classes you want model to differentiate between
-    model = Model(classification=5)
+    model = Model(classification=2)
 
     #Get the train and test inputs and labels from preprocess
     #Preprocesses labels depending on what type of classification: binary/multi-class
-    train_inputs, test_inputs, train_labels, test_labels = preprocess(classification=5)
+    train_inputs, test_inputs, train_labels, test_labels = preprocess(classification=2)
 
     #Train the model
     model.train(train_inputs, train_labels)
