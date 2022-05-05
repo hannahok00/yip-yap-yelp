@@ -35,7 +35,7 @@ def get_labels_data():
     labels = data['review_stars'].values
     reviews = data['text']
     
-    #Get's rid of all punctuation
+    #get rid of all punctuation
     reviews = data['text'].apply(lambda x: re.sub('[%s]' % re.escape(string.punctuation), '' , x))
     
     #Determines how many reviews we want running through the model
@@ -63,7 +63,6 @@ def ternary_label(labels):
             labels_list.append(1)
         if label < 3:
             labels_list.append(2)
-    #print(labels)
     return np.array(labels_list)
 
 #For classifying all 5 star rating classes - sets them from 0-4 as this is what is used for loss
@@ -110,7 +109,7 @@ def process_text(reviews):
     sequenced_reviews = t.texts_to_sequences(filtered_reviews)
     
     #Finally we need to add padding to ensure all our reviews are the same length
-    #Also set the max length here, parameter that can be altered
+    #Also set the max length of the review here, parameter that can be altered
     padded_reviews = pad_sequences(sequenced_reviews, maxlen=50) 
     
     return padded_reviews
