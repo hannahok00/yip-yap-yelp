@@ -1,3 +1,4 @@
+from concurrent.futures import process
 from sre_parse import Tokenizer
 import pandas as pd
 import numpy as np
@@ -24,7 +25,7 @@ nltk.download('omw-1.4')
 # 1. remove punctuation
 # 2. remove stop_words (common words)
 # 3. stem - get the stem of words
-# 4. lemmatize = 
+# 4. lemmatize  
 
 def get_labels_data():
     #Read from the csv file to create a pandas dataframe
@@ -33,26 +34,26 @@ def get_labels_data():
     #get the labels - corresponds to number of stars 
     labels = data['review_stars'].values
     reviews = data['text']
-    #print(reviews[0:10])
     
     #Get's rid of all punctuation
     reviews = data['text'].apply(lambda x: re.sub('[%s]' % re.escape(string.punctuation), '' , x))
-
+    
+    #Determines how many reviews we want running through the model
     return labels[0:80000], reviews[0:80000]
     
 #Function only for use if classifying as positive or negative
-def binary_label(labels, cutoff):
+def binary_label(labels):
 
     labels_list= []
     for label in labels:
-        if label >= cutoff:
+        if label >= 3:
             labels_list.append(0)
         else:
             labels_list.append(1)
-    #print(labels)
+    
     return np.array(labels_list)
 
-
+#Function for classifying 3 classes: positive, neutral or negative
 def ternary_label(labels):
     labels_list= []
     for label in labels:
@@ -65,6 +66,7 @@ def ternary_label(labels):
     #print(labels)
     return np.array(labels_list)
 
+#For classifying all 5 star rating classes - sets them from 0-4 as this is what is used for loss
 def five_classes(labels):
     labels_list= []
     for label in labels:
@@ -78,83 +80,46 @@ def five_classes(labels):
             labels_list.append(3)
         if label == 1:
             labels_list.append(4)
-    #print(labels)
+    
     return np.array(labels_list)
 
-def tokenize(reviews):
+def process_text(reviews):
     #Get the stop words 
-    #A stop word is a commonly used word (such as “the”, “a”, “an”, “in”) 
-    #that a search engine has been programmed to ignore, both when indexing 
-    # entries for searching and when retrieving them as the result of a search query. 
     stop_words = set(stopwords.words('english'))
     filtered_reviews = []
 
     for review in reviews:
-        #print("tokenizing")
+        
         #Tokenize the input
         tokenized_review = word_tokenize(review)
 
         #Remove the stop words
         filtered_sentence = [w for w in tokenized_review if not w.lower() in stop_words]
 
-        #Stem the sentence
+        #Stem the sentence or lemmatize, this helps to stop 'trailing e' issue:
         ps = PorterStemmer()
-        #stemmed_sentence = [ps.stem(w) for w in filtered_sentence]
-
-        #Lemmatize the sentence
         lemmatizer = WordNetLemmatizer()
-        #lemmatized_sentence = [lemmatizer.lemmatize(w) for w in stemmed_sentence]
-
-        #Creates some funky bugs - missing trailing e, missing other elements
         filtered = [lemmatizer.lemmatize(w) if lemmatizer.lemmatize(w).endswith('e') else ps.stem(w) for w in filtered_sentence]
         filtered_reviews.append(filtered)
 
-    #print(filtered_reviews)
-    return filtered_reviews
-
-def string_to_integer(reviews):
-    # dictionary that maps integer to its string value 
-    tokens_dict = {}
-
-    # list to store integer labels 
-    int_tokens = []
-
-    for i in range(len(reviews)):
-        tokens_dict[i] = reviews[i]
-       # int_labels.append(i)
-
-def pad_tokens(tokens):
-    #tokens = [torch.tensor(w) for w in tokens]
-    padded_tokens = pad_sequences(tokens, maxlen=50) 
-
-    #print(padded_tokens)
-    return padded_tokens
-
-
-#def build_vocab(sentences):
-#    tokens = []
-#    all_words = sorted(list(set([STOP_TOKEN,PAD_TOKEN,UNK_TOKEN] + tokens)))
-#    for s in sentences: tokens.extend(s)
-#    vocab =  {word:i for i,word in enumerate(all_words)}
-
-#	return vocab,vocab[PAD_TOKEN]
-
-
-#def convert_to_id(vocab, sentences):
-#    return np.stack([[vocab[word] if word in vocab else vocab[0] for word in sentence] for sentence in sentences])
-
-def fit_text(reviews):
+    #Now we have removed all words we do not want we need to convert our reviews into sequence
     t = Tokenizer()
-    t.fit_on_texts(reviews)
-    tokenized_words = t.texts_to_sequences(reviews)
-    #print(tokenized_words)
-    return tokenized_words
+    #Updates internal vocabulary based on a list of texts. 
+    t.fit_on_texts(filtered_reviews)
+    #Converts reviews 
+    sequenced_reviews = t.texts_to_sequences(filtered_reviews)
+    
+    #Finally we need to add padding to ensure all our reviews are the same length
+    #Also set the max length here, parameter that can be altered
+    padded_reviews = pad_sequences(sequenced_reviews, maxlen=50) 
+    
+    return padded_reviews
 
 def preprocess(classification=2):
 
     labels, reviews = get_labels_data()
 
-    #Call if binary classification
+    #Call if binary classification to convert labels
     if classification == 2:
         labels = binary_label(labels)
 
@@ -166,18 +131,14 @@ def preprocess(classification=2):
     if classification == 5:
         labels = five_classes(labels)
 
-    #if multi_class == False:
-    #    classified_labels = classify_label(labels, 3)
-    reviews = tokenize(reviews)
-    tokenized_words = fit_text(reviews)
-    padded_tokens = pad_tokens(tokenized_words)
+    #process the reviews so they can ba parsed through the model
+    reviews = process_text(reviews)
+    
+    #Split the reviews into train and test  
+    train_inputs = reviews[:64000]
+    test_inputs = reviews[64000:]
 
-    train_inputs = padded_tokens[:64000]
-    test_inputs = padded_tokens[64000:]
-    #if multi_class == False:
-    #    train_labels = classified_labels[:64000]
-    #    test_labels = classified_labels[64000:]
-   # else:
+    #Split corresponding labels into train and test
     train_labels = labels[:64000]
     test_labels = labels[64000:]
 
